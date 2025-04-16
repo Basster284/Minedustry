@@ -1,4 +1,4 @@
-package com.basster.minedustry.items;
+package com.basster.minedustry.item;
 
 import com.basster.minedustry.main;
 import net.minecraft.world.item.Item;
