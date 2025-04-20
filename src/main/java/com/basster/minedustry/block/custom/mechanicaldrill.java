@@ -31,7 +31,7 @@ public class mechanicaldrill extends Block {
                     center.x + offsetX,
                     pos.getY() + 0.1,
                     center.z + offsetZ,
-                    0, 0.1, 0); // Движение вверх (Y = 0.1)
+                    0, 0.1, 0);
         }
     }
 
