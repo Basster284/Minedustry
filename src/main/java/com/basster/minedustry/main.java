@@ -1,5 +1,6 @@
 package com.basster.minedustry;
 
+import com.basster.minedustry.block.ModBlocks;
 import com.basster.minedustry.item.ModItems;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.api.distmarker.Dist;
@@ -31,6 +32,7 @@ public class main
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
 
+        ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in
