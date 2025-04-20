@@ -11,6 +11,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 
 public class mechanicaldrill extends Block {
     private static final int TICK_DELAY = 100;
@@ -21,15 +22,17 @@ public class mechanicaldrill extends Block {
 
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
-            for (int i = 0; i < 3; i++) {
-                double x = pos.getX() + 0.5 + random.nextGaussian() * 0.3;
-                double y = pos.getY() - 0.2 + random.nextDouble() * 0.2;
-                double z = pos.getZ() + 0.5 + random.nextGaussian() * 0.3;
-                level.addParticle(ParticleTypes.SMOKE, x, y, z, 0, -0.1, 0);
-                if (random.nextInt(5) == 0) {
-                    level.addParticle(ParticleTypes.FLAME, x, y, z, 0, 0.01, 0);
-                }
-            }
+        Vec3 center = Vec3.atCenterOf(pos);
+        for (int i = 0; i < 2; i++) {
+            double offsetX = (random.nextDouble() - 0.5) * 0.5;
+            double offsetZ = (random.nextDouble() - 0.5) * 0.5;
+
+            level.addParticle(ParticleTypes.CLOUD,
+                    center.x + offsetX,
+                    pos.getY() + 0.1,
+                    center.z + offsetZ,
+                    0, 0.1, 0); // Движение вверх (Y = 0.1)
+        }
     }
 
     @Override
