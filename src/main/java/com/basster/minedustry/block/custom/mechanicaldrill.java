@@ -11,13 +11,22 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.Vec3;
 
 public class mechanicaldrill extends Block {
+    public static final BooleanProperty TEXTURE_FRAME = BooleanProperty.create("texture_frame");
     private static final int TICK_DELAY = 100;
 
-    public mechanicaldrill(Properties properties){
+    public mechanicaldrill(Properties properties) {
         super(properties);
+        registerDefaultState(stateDefinition.any().setValue(TEXTURE_FRAME, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(TEXTURE_FRAME);
     }
 
     @Override
@@ -37,39 +46,37 @@ public class mechanicaldrill extends Block {
 
     @Override
     public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        super.tick(state, level, pos, random);
+        level.setBlock(pos, state.cycle(TEXTURE_FRAME), 3);
+        level.scheduleTick(pos, this, TICK_DELAY);
 
         BlockPos blockBelow = pos.below();
         BlockState blockStateBelow = level.getBlockState(blockBelow);
-        ItemStack drop;
 
-        if (blockStateBelow.is(Blocks.COPPER_ORE) || blockStateBelow.is(Blocks.DEEPSLATE_COPPER_ORE)) {
-            drop = new ItemStack(Items.RAW_COPPER);
-        } else {
-            drop = new ItemStack(blockStateBelow.getBlock());
+        if (!blockStateBelow.isAir()) {
+            ItemStack drop = blockStateBelow.is(Blocks.COPPER_ORE) ||
+                    blockStateBelow.is(Blocks.DEEPSLATE_COPPER_ORE)
+                    ? new ItemStack(Items.RAW_COPPER)
+                    : new ItemStack(blockStateBelow.getBlock());
+
+            level.addFreshEntity(new ItemEntity(level,
+                    pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
+                    drop));
+
+            level.destroyBlock(blockBelow, false);
         }
 
-        level.addFreshEntity(new ItemEntity(level,
-                pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
-                drop));
-
-        level.scheduleTick(pos, this, TICK_DELAY);
+        level.scheduleTick(pos, this, 100);
     }
 
     @Override
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
-        if (!level.isClientSide) {
-            if (!canStay(level, pos)) {
-                level.destroyBlock(pos, false);
-                return;
-            }
+        if (!level.isClientSide && canStay(level, pos)) {
             level.scheduleTick(pos, this, TICK_DELAY);
         }
     }
 
     private boolean canStay(Level level, BlockPos pos) {
         BlockState below = level.getBlockState(pos.below());
-
         return below.is(Blocks.STONE) ||
                 below.is(Blocks.COPPER_ORE) ||
                 below.is(Blocks.DEEPSLATE_COPPER_ORE) ||
