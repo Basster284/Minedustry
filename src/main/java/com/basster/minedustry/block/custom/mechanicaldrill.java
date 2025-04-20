@@ -1,6 +1,7 @@
 package com.basster.minedustry.block.custom;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -16,6 +17,19 @@ public class mechanicaldrill extends Block {
 
     public mechanicaldrill(Properties properties){
         super(properties);
+    }
+
+    @Override
+    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+            for (int i = 0; i < 3; i++) {
+                double x = pos.getX() + 0.5 + random.nextGaussian() * 0.3;
+                double y = pos.getY() - 0.2 + random.nextDouble() * 0.2;
+                double z = pos.getZ() + 0.5 + random.nextGaussian() * 0.3;
+                level.addParticle(ParticleTypes.SMOKE, x, y, z, 0, -0.1, 0);
+                if (random.nextInt(5) == 0) {
+                    level.addParticle(ParticleTypes.FLAME, x, y, z, 0, 0.01, 0);
+                }
+            }
     }
 
     @Override
