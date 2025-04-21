@@ -1,16 +1,7 @@
 {
   "variants": {
-    "texture_frame=0": {
-      "model": "minedustry:block/mechanicaldrill",
-      "textures": {
-        "frame0": "minedustry:block/mechanicaldrillfan1"
-      }
-    },
-    "texture_frame=1": {
-      "model": "minedustry:block/mechanicaldrill",
-      "textures": {
-        "frame0": "minedustry:block/mechanicaldrillfan2"
-      }
+    "": {
+      "model": "minedustry:block/mechanicaldrill"
     }
   }
 }

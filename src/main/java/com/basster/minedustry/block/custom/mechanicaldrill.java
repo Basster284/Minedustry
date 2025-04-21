@@ -16,75 +16,100 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.Vec3;
 
 public class mechanicaldrill extends Block {
-    public static final BooleanProperty TEXTURE_FRAME = BooleanProperty.create("texture_frame");
     private static final int TICK_DELAY = 100;
+    private static final Block[] MINABLE_BLOCKS = {
+            Blocks.STONE,
+            Blocks.DEEPSLATE,
+            Blocks.GRANITE,
+            Blocks.DIORITE,
+            Blocks.ANDESITE,
+            Blocks.SAND,
+            Blocks.COPPER_ORE,
+            Blocks.DEEPSLATE_COPPER_ORE
+    };
 
     public mechanicaldrill(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(TEXTURE_FRAME, false));
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(TEXTURE_FRAME);
-    }
-
-    @Override
-    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
-        Vec3 center = Vec3.atCenterOf(pos);
-        for (int i = 0; i < 2; i++) {
-            double offsetX = (random.nextDouble() - 0.5) * 0.5;
-            double offsetZ = (random.nextDouble() - 0.5) * 0.5;
-
-            level.addParticle(ParticleTypes.CLOUD,
-                    center.x + offsetX,
-                    pos.getY() + 0.1,
-                    center.z + offsetZ,
-                    0, 0.1, 0);
+    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
+        if (!level.isClientSide) {
+            level.scheduleTick(pos, this, TICK_DELAY);
         }
     }
 
     @Override
     public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        level.setBlock(pos, state.cycle(TEXTURE_FRAME), 3);
-        level.scheduleTick(pos, this, TICK_DELAY);
-
         BlockPos blockBelow = pos.below();
-        BlockState blockStateBelow = level.getBlockState(blockBelow);
+        BlockState blockBelowState = level.getBlockState(blockBelow);
 
-        if (!blockStateBelow.isAir()) {
-            ItemStack drop = blockStateBelow.is(Blocks.COPPER_ORE) ||
-                    blockStateBelow.is(Blocks.DEEPSLATE_COPPER_ORE)
-                    ? new ItemStack(Items.RAW_COPPER)
-                    : new ItemStack(blockStateBelow.getBlock());
-
-            level.addFreshEntity(new ItemEntity(level,
-                    pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
-                    drop));
-
-            level.destroyBlock(blockBelow, false);
-        }
-
-        level.scheduleTick(pos, this, 100);
-    }
-
-    @Override
-    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
-        if (!level.isClientSide && canStay(level, pos)) {
+        if (!canMine(blockBelowState)) {
             level.scheduleTick(pos, this, TICK_DELAY);
+            return;
         }
+
+        ItemStack drop = getDropForBlock(blockBelowState);
+        if (!drop.isEmpty()) {
+            spawnItem(level, pos, drop);
+            spawnParticles(level, pos, random);
+        }
+
+        level.scheduleTick(pos, this, TICK_DELAY);
     }
 
-    private boolean canStay(Level level, BlockPos pos) {
-        BlockState below = level.getBlockState(pos.below());
-        return below.is(Blocks.STONE) ||
-                below.is(Blocks.COPPER_ORE) ||
-                below.is(Blocks.DEEPSLATE_COPPER_ORE) ||
-                below.is(Blocks.DEEPSLATE) ||
-                below.is(Blocks.ANDESITE) ||
-                below.is(Blocks.DIORITE) ||
-                below.is(Blocks.GRANITE) ||
-                below.is(Blocks.SAND);
+    private boolean canMine(BlockState state) {
+        for (Block block : MINABLE_BLOCKS) {
+            if (state.is(block)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private ItemStack getDropForBlock(BlockState state) {
+        if (state.is(Blocks.COPPER_ORE) || state.is(Blocks.DEEPSLATE_COPPER_ORE)) {
+            return new ItemStack(Items.RAW_COPPER);
+        }
+        return new ItemStack(state.getBlock().asItem());
+    }
+
+    private void spawnItem(ServerLevel level, BlockPos pos, ItemStack stack) {
+        level.addFreshEntity(new ItemEntity(
+                level,
+                pos.getX() + 0.5,
+                pos.getY() + 1.0,
+                pos.getZ() + 0.5,
+                stack
+        ));
+    }
+
+    private void spawnParticles(ServerLevel level, BlockPos pos, RandomSource random) {
+        // Основные частицы (как у смерти моба)
+        for (int i = 0; i < 5; i++) {
+            level.sendParticles(
+                    ParticleTypes.CLOUD, // Тип частиц (бело-голубые)
+                    pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.5,
+                    pos.getY() + 0.2,
+                    pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.5,
+                    1,                               // Количество
+                    0.0, 0.0, 0.0,                   // Смещение
+                    0.15 + random.nextDouble() * 0.1 // Скорость вверх (как у мобов)
+            );
+        }
+
+        // Дополнительные лёгкие частицы (для объёма)
+        for (int i = 0; i < 3; i++) {
+            level.sendParticles(
+                    ParticleTypes.WHITE_ASH,
+                    pos.getX() + 0.5,
+                    pos.getY() + 0.2,
+                    pos.getZ() + 0.5,
+                    1,
+                    0.1, 0.0, 0.1,
+                    0.08
+            );
+        }
     }
 
 }
